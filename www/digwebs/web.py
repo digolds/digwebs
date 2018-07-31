@@ -162,6 +162,26 @@ def post(path):
         return func
     return _decorator
 
+def put(path):
+    '''
+    A @put decorator.
+    '''
+    def _decorator(func):
+        func.__web_route__ = path
+        func.__web_method__ = 'PUT'
+        return func
+    return _decorator
+
+def delete(path):
+    '''
+    A @delete decorator.
+    '''
+    def _decorator(func):
+        func.__web_route__ = path
+        func.__web_method__ = 'DELETE'
+        return func
+    return _decorator
+
 class MultipartFile(object):
     '''
     Multipart file storage get from request input.
