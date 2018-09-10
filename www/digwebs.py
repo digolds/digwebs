@@ -3,18 +3,14 @@
 __author__ = 'SLZ'
 
 '''
-A WSGI application entry.
+digwebs framework entry.
 '''
 
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from config import configs
-configs['debug'] = __name__ == '__main__'
-from digwebs.web import WSGIApplication
+from .web import WSGIApplication
 
-# init digolds app:
-from constants import root_path
 digolds = WSGIApplication(root_path)
 digolds.init_middlewares()
 

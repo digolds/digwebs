@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 __author__ = 'SLZ'
 
@@ -18,7 +17,6 @@ def _static_file_generator(fpath):
             block = f.read(BLOCK_SIZE)
 
 class StaticFileRoute(object):
-
     def __init__(self):
         self.method = 'GET'
         self.is_static = False

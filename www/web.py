@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 '''
 A simple, lightweight, WSGI-compatible web framework.
 '''
 
-__author__ = 'Michael Liao'
+__author__ = 'SLZ'
 
 import types, os, re, cgi, sys, time, datetime, functools, mimetypes, urllib, threading, logging, traceback, hashlib
 
