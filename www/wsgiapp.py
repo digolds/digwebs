@@ -11,11 +11,7 @@ logging.basicConfig(level=logging.INFO)
 
 from config import configs
 configs['debug'] = __name__ == '__main__'
-from models import db
 from digwebs.web import WSGIApplication
-
-# init db:
-db.create_engine(**configs.db)
 
 # init digolds app:
 from constants import root_path
