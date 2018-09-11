@@ -68,6 +68,23 @@ def unquote(s, encoding='utf-8'):
     '''
     return urllib.parse.unquote(s)
 
+def to_str(s, encoding='utf-8'):
+    '''
+    Convert to str.
+
+    >>> to_str('挖矿') == '挖矿'
+    True
+    >>> to_str(b'\xe6\x8c\x96\xe7\x9f\xbf') == '挖矿'
+    True
+    >>> to_str(-43) == '-43'
+    True
+    '''
+    if isinstance(s, str):
+        return s
+    if isinstance(s, bytes):
+        return s.decode(encoding)
+    return str(s)
+
 if __name__=='__main__':
     import doctest
     doctest.testmod()

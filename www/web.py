@@ -11,7 +11,7 @@ import types, os, re, cgi, sys, time, datetime, functools, mimetypes, urllib, th
 from .errors import notfound, HttpError, RedirectError, _HEADER_X_POWERED_BY, _RE_RESPONSE_STATUS, _RESPONSE_HEADER_DICT, _RESPONSE_STATUSES
 
 from config import configs
-from .common import unquote, quote
+from .common import unquote, quote, to_str
 
 from io import StringIO
 
@@ -89,32 +89,6 @@ class UTC(datetime.tzinfo):
 
     __repr__ = __str__
 
-def _to_str(s):
-    '''
-    Convert to str.
-
-    >>> _to_str('s123') == 's123'
-    True
-    >>> _to_str(u'\u4e2d\u6587') == '\xe4\xb8\xad\xe6\x96\x87'
-    True
-    >>> _to_str(-123) == '-123'
-    True
-    '''
-    if isinstance(s, str):
-        return s
-    if isinstance(s, unicode):
-        return s.encode('utf-8')
-    return str(s)
-
-def _to_unicode(s, encoding='utf-8'):
-    '''
-    Convert to unicode.
-
-    >>> _to_unicode('\xe4\xb8\xad\xe6\x96\x87') == u'\u4e2d\u6587'
-    True
-    '''
-    return s#.decode('utf-8')
-
 def get(path):
     '''
     A @get decorator.
@@ -190,7 +164,7 @@ class MultipartFile(object):
     f.file # file-like object
     '''
     def __init__(self, storage):
-        self.filename = _to_unicode(storage.filename)
+        self.filename = to_str(storage.filename)
         self.file = storage.file
         self.data = storage.file.read()
 
@@ -205,10 +179,10 @@ class Request(object):
     def _parse_input(self):
         def _convert(item):
             if isinstance(item, list):
-                return [_to_unicode(i.value) for i in item]
+                return [to_str(i.value) for i in item]
             if item.filename:
                 return MultipartFile(item)
-            return _to_unicode(item.value)
+            return to_str(item.value)
         fs = cgi.FieldStorage(fp=self._environ['wsgi.input'], environ=self._environ, keep_blank_values=True)
         inputs = dict()
         for key in fs:
@@ -582,7 +556,7 @@ class Response(object):
         key = name.upper()
         if not key in _RESPONSE_HEADER_DICT:
             key = name
-        self._headers[key] = _to_str(value)
+        self._headers[key] = to_str(value)
 
     @property
     def content_type(self):
