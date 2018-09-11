@@ -2,7 +2,22 @@
 
 __author__ = 'SLZ'
 
-from .common import to_str
+import cgi, urllib
+
+from .common import to_str, unquote, Dict
+
+class MultipartFile(object):
+    '''
+    Multipart file storage get from request input.
+
+    f = ctx.request['file']
+    f.filename # 'test.png'
+    f.file # file-like object
+    '''
+    def __init__(self, storage):
+        self.filename = to_str(storage.filename)
+        self.file = storage.file
+        self.data = storage.file.read()
 
 class Request(object):
     '''

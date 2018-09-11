@@ -6,169 +6,22 @@ A simple, lightweight, WSGI-compatible web framework.
 
 __author__ = 'SLZ'
 
-import types, os, re, cgi, sys, time, datetime, functools, mimetypes, urllib, threading, logging, traceback, hashlib
-
-from .errors import notfound, HttpError, RedirectError, _HEADER_X_POWERED_BY, _RE_RESPONSE_STATUS, _RESPONSE_HEADER_DICT, _RESPONSE_STATUSES
-
-from config import configs
-from .common import unquote, quote, to_str
-
+import os, re, sys, time, datetime, threading, logging, traceback, hashlib
 from io import StringIO
 
 # thread local object for storing request and response:
-
 ctx = threading.local()
 
 from .common import Dict
+from .errors import notfound, HttpError, RedirectError
+from .request import Request
+from .response import Response
 
 def make_signed_cookie(id, email, max_age):
     # build cookie string by: id-expires-md5
     expires = str(int(time.time() + (max_age or 86400)))
     L = [id, expires, hashlib.md5('{id}-{email}-{expires}-{secret}'.format(id=id,email=email,expires=expires,secret=configs.session.secret).encode('utf-8')).hexdigest()]
     return '-'.join(L)
-
-_TIMEDELTA_ZERO = datetime.timedelta(0)
-
-# timezone as UTC+8:00, UTC-10:00
-
-_RE_TZ = re.compile('^([\+\-])([0-9]{1,2})\:([0-9]{1,2})$')
-
-class UTC(datetime.tzinfo):
-    '''
-    A UTC tzinfo object. 
-
-    >>> tz0 = UTC('+00:00')
-    >>> tz0.tzname(None)
-    'UTC+00:00'
-    >>> tz8 = UTC('+8:00')
-    >>> tz8.tzname(None)
-    'UTC+8:00'
-    >>> tz7 = UTC('+7:30')
-    >>> tz7.tzname(None)
-    'UTC+7:30'
-    >>> tz5 = UTC('-05:30')
-    >>> tz5.tzname(None)
-    'UTC-05:30'
-    >>> from datetime import datetime
-    >>> u = datetime.utcnow().replace(tzinfo=tz0)
-    >>> l1 = u.astimezone(tz8)
-    >>> l2 = u.replace(tzinfo=tz8)
-    >>> d1 = u - l1
-    >>> d2 = u - l2
-    >>> d1.seconds
-    0
-    >>> d2.seconds
-    28800
-    '''
-
-    def __init__(self, utc):
-        utc = str(utc.strip().upper())
-        mt = _RE_TZ.match(utc)
-        if mt:
-            minus = mt.group(1)=='-'
-            h = int(mt.group(2))
-            m = int(mt.group(3))
-            if minus:
-                h, m = (-h), (-m)
-            self._utcoffset = datetime.timedelta(hours=h, minutes=m)
-            self._tzname = 'UTC%s' % utc
-        else:
-            raise ValueError('bad utc time zone')
-
-    def utcoffset(self, dt):
-        return self._utcoffset
-
-    def dst(self, dt):
-        return _TIMEDELTA_ZERO
-
-    def tzname(self, dt):
-        return self._tzname
-
-    def __str__(self):
-        return 'UTC tzinfo object (%s)' % self._tzname
-
-    __repr__ = __str__
-
-def get(path):
-    '''
-    A @get decorator.
-
-    @get('/:id')
-    def index(id):
-        pass
-
-    >>> @get('/test/:id')
-    ... def test():
-    ...     return 'ok'
-    ...
-    >>> test.__web_route__
-    '/test/:id'
-    >>> test.__web_method__
-    'GET'
-    >>> test()
-    'ok'
-    '''
-    def _decorator(func):
-        func.__web_route__ = path
-        func.__web_method__ = 'GET'
-        return func
-    return _decorator
-
-def post(path):
-    '''
-    A @post decorator.
-
-    >>> @post('/post/:id')
-    ... def testpost():
-    ...     return '200'
-    ...
-    >>> testpost.__web_route__
-    '/post/:id'
-    >>> testpost.__web_method__
-    'POST'
-    >>> testpost()
-    '200'
-    '''
-    def _decorator(func):
-        func.__web_route__ = path
-        func.__web_method__ = 'POST'
-        return func
-    return _decorator
-
-def put(path):
-    '''
-    A @put decorator.
-    '''
-    def _decorator(func):
-        func.__web_route__ = path
-        func.__web_method__ = 'PUT'
-        return func
-    return _decorator
-
-def delete(path):
-    '''
-    A @delete decorator.
-    '''
-    def _decorator(func):
-        func.__web_route__ = path
-        func.__web_method__ = 'DELETE'
-        return func
-    return _decorator
-
-class MultipartFile(object):
-    '''
-    Multipart file storage get from request input.
-
-    f = ctx.request['file']
-    f.filename # 'test.png'
-    f.file # file-like object
-    '''
-    def __init__(self, storage):
-        self.filename = to_str(storage.filename)
-        self.file = storage.file
-        self.data = storage.file.read()
-
-UTC_0 = UTC('+00:00')
 
 class Template(object):
 
@@ -221,68 +74,6 @@ class Jinja2TemplateEngine(TemplateEngine):
 
     def __call__(self, path, model):
         return self._env.get_template(path).render(**model).encode('utf-8')
-
-def view(path):
-    '''
-    A view decorator that render a view by dict.
-
-    >>> @view('test/view.html')
-    ... def hello():
-    ...     return dict(name='Bob')
-    >>> t = hello()
-    >>> isinstance(t, Template)
-    True
-    >>> t.template_name
-    'test/view.html'
-    >>> @view('test/view.html')
-    ... def hello2():
-    ...     return ['a list']
-    >>> t = hello2()
-    Traceback (most recent call last):
-      ...
-    ValueError: Expect return a dict when using @view() decorator.
-    '''
-    def _decorator(func):
-        @functools.wraps(func)
-        def _wrapper(*args, **kw):
-            r = func(*args, **kw)
-            if isinstance(r, dict):
-                logging.info('return Template')
-                return Template(path, **r)
-            raise ValueError('Expect return a dict when using @view() decorator.')
-        return _wrapper
-    return _decorator
-
-def view1(pathfn):
-    '''
-    A view decorator that render a view by dict.
-
-    >>> @view('test/view.html')
-    ... def hello():
-    ...     return dict(name='Bob')
-    >>> t = hello()
-    >>> isinstance(t, Template)
-    True
-    >>> t.template_name
-    'test/view.html'
-    >>> @view('test/view.html')
-    ... def hello2():
-    ...     return ['a list']
-    >>> t = hello2()
-    Traceback (most recent call last):
-      ...
-    ValueError: Expect return a dict when using @view() decorator.
-    '''
-    def _decorator(func):
-        @functools.wraps(func)
-        def _wrapper(*args, **kw):
-            r = func(*args, **kw)
-            if isinstance(r, dict):
-                logging.info('return Template')
-                return Template(pathfn(), **r)
-            raise ValueError('Expect return a dict when using @view() decorator.')
-        return _wrapper
-    return _decorator
 
 _RE_INTERCEPTROR_STARTS_WITH = re.compile(r'^([^\*\?]+)\*?$')
 _RE_INTERCEPTROR_ENDS_WITH = re.compile(r'^\*([^\*\?]+)$')
