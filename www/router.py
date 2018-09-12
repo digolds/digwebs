@@ -4,9 +4,9 @@ __author__ = 'SLZ'
 
 import re, logging, mimetypes, os, types
 
-from .errors import notfound, badrequest
+from errors import notfound, badrequest
 
-from .web import ctx
+from web import ctx
 
 def _static_file_generator(fpath):
     BLOCK_SIZE = 8192
@@ -141,17 +141,17 @@ def _load_module(module_name):
     m = __import__(from_module, globals(), locals(), [import_module])
     return getattr(m, import_module)
 
-from config import configs
-
 class Router(object):
 
-    def __init__(self):
+    def __init__(
+        self,
+        is_develop_mode):
         self._get_static = {}
         self._post_static = {}
 
         self._get_dynamic = []
         self._post_dynamic = []
-        if configs.get('debug',False):
+        if is_develop_mode:
             self._get_dynamic.append(StaticFileRoute())
             self._get_dynamic.append(FaviconFileRoute())
 
@@ -199,3 +199,20 @@ class Router(object):
             raise notfound()
 
         raise badrequest()
+
+def create_controller(root_path, controller_folder, is_develop_mode):
+    r = Router(is_develop_mode)
+    controller_modules_path = os.path.join(root_path, controller_folder)
+    for f in os.listdir(controller_modules_path):
+        if f.endswith('.py') and f != '__init__.py':
+            import_module = f.replace(".py", "")
+            m = __import__(controller_folder, globals(), locals(), [import_module])
+            s_m = getattr(m, import_module)
+            r.add_module(s_m)
+
+    def handle_route(ctx, next):
+        request_method = ctx.request.request_method
+        path_info = ctx.request.path_info
+        f, arg = r.route_to(request_method,path_info)
+        return f(*arg)
+    return (handle_route,10000)

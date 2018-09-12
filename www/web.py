@@ -15,13 +15,16 @@ import logging
 import traceback
 import hashlib
 import functools
+import json
 from io import StringIO
 # import custom modules
-from .common import Dict
-from .errors import notfound, HttpError, RedirectError
-from .request import Request
-from .response import Response
-from .template import Template, Jinja2TemplateEngine
+from common import Dict
+from errors import notfound, HttpError, RedirectError
+from request import Request
+from response import Response
+from template import Template, Jinja2TemplateEngine
+from router import create_controller
+from apis import APIError
 
 # thread local object for storing request and response:
 ctx = threading.local()
@@ -30,9 +33,11 @@ ctx = threading.local()
 class digwebs(object):
     def __init__(
         self,
-        root_path,
+        root_path = None,
         views_folder = 'views',
-        middlewares_folder='middlewares'):
+        middlewares_folder='middlewares',
+        controller_folder = '',
+        is_develop_mode = True):
         '''
         Init a digwebs.
 
@@ -40,11 +45,18 @@ class digwebs(object):
           root_path: root path.
         '''
 
-        self.middleware = []
-        self.root_path = root_path
+        self.root_path = root_path if root_path else os.path.abspath(os.path.dirname(sys.argv[0]))
         self.views_folder = views_folder
         self.middlewares_folder = middlewares_folder
-
+        self.is_develop_mode = is_develop_mode
+        
+        self._init_template_engine()
+        
+        self.middleware = []
+        self.middleware.append(create_controller(root_path,controller_folder,is_develop_mode))
+        self._init_middlewares()
+    
+    def _init_template_engine(self):
         def datetime_filter(t):
             delta = int(time.time() - t)
             if delta < 60:
@@ -58,10 +70,10 @@ class digwebs(object):
             dt = datetime.datetime.fromtimestamp(t)
             return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
-        self.template_engine = Jinja2TemplateEngine(os.path.join(root_path, self.views_folder))
+        self.template_engine = Jinja2TemplateEngine(os.path.join(self.root_path, self.views_folder))
         self.template_engine.add_filter('datetime', datetime_filter)
 
-    def init_middlewares(self):
+    def _init_middlewares(self):
         for f in os.listdir(os.path.join(self.root_path, self.middlewares_folder)):
             if f.endswith('.py'):
                 import_module = f.replace(".py", "")
@@ -261,6 +273,28 @@ class digwebs(object):
             return _wrapper
 
         return _decorator
+    
+    def api(self,func):
+        '''
+        A decorator that makes a function to json api, makes the return value as json.
+
+        @app.route('/api/test')
+        @api
+        def api_test():
+            return dict(result='123', items=[])
+        '''
+        @functools.wraps(func)
+        def _wrapper(*args, **kw):
+            try:
+                r = json.dumps(func(*args, **kw))
+            except APIError as e:
+                r = json.dumps(dict(error=e.error, data=e.data, message=e.message))
+            except Exception as e:
+                logging.exception(e)
+                r = json.dumps(dict(error='internalerror', data=e.__class__.__name__, message=str(e)))
+            ctx.response.content_type = 'application/json'
+            return r
+        return _wrapper
 
 
 if __name__ == '__main__':

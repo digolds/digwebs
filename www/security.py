@@ -2,6 +2,9 @@
 
 __author__ = 'SLZ'
 
+import hashlib
+import time
+
 def make_signed_cookie(id, email, max_age):
     # build cookie string by: id-expires-md5
     expires = str(int(time.time() + (max_age or 86400)))
@@ -9,7 +12,7 @@ def make_signed_cookie(id, email, max_age):
         id, expires,
         hashlib.md5('{id}-{email}-{expires}-{secret}'.format(
             id=id, email=email, expires=expires,
-            secret=configs.session.secret).encode('utf-8')).hexdigest()
+            secret='digwebs').encode('utf-8')).hexdigest()
     ]
     return '-'.join(L)
 

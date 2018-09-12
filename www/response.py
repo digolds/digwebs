@@ -4,7 +4,7 @@ __author__ = 'SLZ'
 
 import datetime, re
 
-from .common import quote, unquote, to_str
+from common import quote, unquote, to_str
 
 # all known response statues:
 _RESPONSE_STATUSES = {
