@@ -28,13 +28,22 @@ ctx = threading.local()
 
 
 class digwebs(object):
-    def __init__(self, root_path, **kw):
+    def __init__(
+        self,
+        root_path,
+        views_folder = 'views',
+        middlewares_folder='middlewares'):
         '''
         Init a digwebs.
 
         Args:
           root_path: root path.
         '''
+
+        self.middleware = []
+        self.root_path = root_path
+        self.views_folder = views_folder
+        self.middlewares_folder = middlewares_folder
 
         def datetime_filter(t):
             delta = int(time.time() - t)
@@ -49,16 +58,14 @@ class digwebs(object):
             dt = datetime.datetime.fromtimestamp(t)
             return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
-        self.template_engine = Jinja2TemplateEngine(os.path.join(root_path, 'views'))
+        self.template_engine = Jinja2TemplateEngine(os.path.join(root_path, self.views_folder))
         self.template_engine.add_filter('datetime', datetime_filter)
-        self.middleware = []
-        self.root_path = root_path
 
     def init_middlewares(self):
-        for f in os.listdir(self.root_path + r'/middlewares'):
+        for f in os.listdir(os.path.join(self.root_path, self.middlewares_folder)):
             if f.endswith('.py'):
                 import_module = f.replace(".py", "")
-                m = __import__('middlewares', globals(), locals(),
+                m = __import__(self.middlewares_folder, globals(), locals(),
                                [import_module])
                 s_m = getattr(m, import_module)
                 fn = getattr(s_m, import_module, None)
