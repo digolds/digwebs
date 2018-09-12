@@ -6,7 +6,7 @@ __author__ = 'SLZ'
 JSON API definition.
 '''
 
-import json, logging, functools
+import json, logging
 
 from .web import ctx
 

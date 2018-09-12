@@ -1,168 +1,36 @@
 #!/usr/bin/env python
-
 '''
 A simple, lightweight, WSGI-compatible web framework.
 '''
 
 __author__ = 'SLZ'
 
-import os, re, sys, time, datetime, threading, logging, traceback, hashlib
+# import build-in modules
+import os
+import sys
+import time
+import datetime
+import threading
+import logging
+import traceback
+import hashlib
+import functools
 from io import StringIO
-
-# thread local object for storing request and response:
-ctx = threading.local()
-
+# import custom modules
 from .common import Dict
 from .errors import notfound, HttpError, RedirectError
 from .request import Request
 from .response import Response
+from .template import Template, Jinja2TemplateEngine
 
-def make_signed_cookie(id, email, max_age):
-    # build cookie string by: id-expires-md5
-    expires = str(int(time.time() + (max_age or 86400)))
-    L = [id, expires, hashlib.md5('{id}-{email}-{expires}-{secret}'.format(id=id,email=email,expires=expires,secret=configs.session.secret).encode('utf-8')).hexdigest()]
-    return '-'.join(L)
+# thread local object for storing request and response:
+ctx = threading.local()
 
-class Template(object):
 
-    def __init__(self, template_name, **kw):
-        '''
-        Init a template object with template name, model as dict, and additional kw that will append to model.
-
-        >>> t = Template('hello.html', title='Hello', copyright='@2012')
-        >>> t.model['title']
-        'Hello'
-        >>> t.model['copyright']
-        '@2012'
-        >>> t = Template('test.html', abc=u'ABC', xyz=u'XYZ')
-        >>> t.model['abc']
-        u'ABC'
-        '''
-        self.template_name = template_name
-        self.model = dict(**kw)
-
-class TemplateEngine(object):
-    '''
-    Base template engine.
-    '''
-    def __call__(self, path, model):
-        return '<!-- override this method to render template -->'
-
-class Jinja2TemplateEngine(TemplateEngine):
-
-    '''
-    Render using jinja2 template engine.
-
-    >>> templ_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'test')
-    >>> engine = Jinja2TemplateEngine(templ_path)
-    >>> engine.add_filter('datetime', lambda dt: dt.strftime('%Y-%m-%d %H:%M:%S'))
-    >>> engine('jinja2-test.html', dict(name='Michael', posted_at=datetime.datetime(2014, 6, 1, 10, 11, 12)))
-    '<p>Hello, Michael.</p><span>2014-06-01 10:11:12</span>'
-    '''
-
-    def __init__(self, templ_dir, **kw):
-        from jinja2 import Environment, FileSystemLoader
-        if not 'autoescape' in kw:
-            kw['autoescape'] = True
-        self._env = Environment(
-            variable_start_string = '{{{{',
-            variable_end_string = '}}}}',
-            loader=FileSystemLoader(templ_dir), **kw)
-
-    def add_filter(self, name, fn_filter):
-        self._env.filters[name] = fn_filter
-
-    def __call__(self, path, model):
-        return self._env.get_template(path).render(**model).encode('utf-8')
-
-_RE_INTERCEPTROR_STARTS_WITH = re.compile(r'^([^\*\?]+)\*?$')
-_RE_INTERCEPTROR_ENDS_WITH = re.compile(r'^\*([^\*\?]+)$')
-
-def _build_pattern_fn(pattern):
-    m = _RE_INTERCEPTROR_STARTS_WITH.match(pattern)
-    if m:
-        return lambda p: p.startswith(m.group(1))
-    m = _RE_INTERCEPTROR_ENDS_WITH.match(pattern)
-    if m:
-        return lambda p: p.endswith(m.group(1))
-    raise ValueError('Invalid pattern definition in interceptor.')
-
-def interceptor(pattern='/'):
-    '''
-    An @interceptor decorator.
-
-    @interceptor('/admin/')
-    def check_admin(req, resp):
-        pass
-    '''
-    def _decorator(func):
-        func.__interceptor__ = _build_pattern_fn(pattern)
-        return func
-    return _decorator
-
-def _build_interceptor_fn(func, next):
-    def _wrapper():
-        if func.__interceptor__(ctx.request.path_info):
-            return func(next)
-        else:
-            return next()
-    return _wrapper
-
-def _build_interceptor_chain(last_fn, *interceptors):
-    '''
-    Build interceptor chain.
-
-    >>> def target():
-    ...     print 'target'
-    ...     return 123
-    >>> @interceptor('/')
-    ... def f1(next):
-    ...     print 'before f1()'
-    ...     return next()
-    >>> @interceptor('/test/')
-    ... def f2(next):
-    ...     print 'before f2()'
-    ...     try:
-    ...         return next()
-    ...     finally:
-    ...         print 'after f2()'
-    >>> @interceptor('/')
-    ... def f3(next):
-    ...     print 'before f3()'
-    ...     try:
-    ...         return next()
-    ...     finally:
-    ...         print 'after f3()'
-    >>> chain = _build_interceptor_chain(target, f1, f2, f3)
-    >>> ctx.request = Dict(path_info='/test/abc')
-    >>> chain()
-    before f1()
-    before f2()
-    before f3()
-    target
-    after f3()
-    after f2()
-    123
-    >>> ctx.request = Dict(path_info='/api/')
-    >>> chain()
-    before f1()
-    before f3()
-    target
-    after f3()
-    123
-    '''
-    L = list(interceptors)
-    L.reverse()
-    fn = last_fn
-    for f in L:
-        fn = _build_interceptor_fn(f, fn)
-    return fn
-
-class WSGIApplication(object):
-
+class digwebs(object):
     def __init__(self, document_root, **kw):
         '''
-        Init a WSGIApplication.
+        Init a digwebs.
 
         Args:
           document_root: document root path.
@@ -184,13 +52,14 @@ class WSGIApplication(object):
             dt = datetime.datetime.fromtimestamp(t)
             return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
-        self.template_engine = Jinja2TemplateEngine(os.path.join(document_root, 'views'))
+        self.template_engine = Jinja2TemplateEngine(
+            os.path.join(document_root, 'views'))
         self.template_engine.add_filter('datetime', datetime_filter)
         self.middleware = []
 
     def _check_not_running(self):
         if self._running:
-            raise RuntimeError('Cannot modify WSGIApplication when running.')
+            raise RuntimeError('Cannot modify digwebs when running.')
 
     @property
     def template_engine(self):
@@ -205,18 +74,23 @@ class WSGIApplication(object):
         for f in os.listdir(self._document_root + r'/middlewares'):
             if f.endswith('.py'):
                 import_module = f.replace(".py", "")
-                m = __import__('middlewares', globals(), locals(), [import_module])
+                m = __import__('middlewares', globals(), locals(),
+                               [import_module])
                 s_m = getattr(m, import_module)
                 fn = getattr(s_m, import_module, None)
-                if fn is not None and callable(fn) and not import_module.endswith('__'):
+                if fn is not None and callable(
+                        fn) and not import_module.endswith('__'):
                     self.middleware.append(fn())
+
         def take_second(elem):
             return elem[1]
+
         self.middleware.sort(key=take_second)
 
-    def run(self, port=9000, host='127.0.0.1'):
+    def run(self, port=9999, host='127.0.0.1'):
         from wsgiref.simple_server import make_server
-        logging.info('application (%s) will start at %s:%s...' % (self._document_root, host, port))
+        logging.info('application (%s) will start at %s:%s...' %
+                     (self._document_root, host, port))
         server = make_server(host, port, self.get_wsgi_application())
         server.serve_forever()
 
@@ -227,15 +101,17 @@ class WSGIApplication(object):
         _application = Dict(document_root=self._document_root)
 
         def fn_route():
-            def route_entry(context,next):
+            def route_entry(context, next):
                 def dispatch(i):
                     fn = self.middleware[i][0]
                     if i == len(self.middleware):
                         fn = next
-                    return fn(context,lambda : dispatch(i+1))
+                    return fn(context, lambda: dispatch(i + 1))
 
                 return dispatch(0)
+
             return route_entry
+
         fn_exec = fn_route()
 
         def wsgi(env, start_response):
@@ -243,7 +119,7 @@ class WSGIApplication(object):
             ctx.request = Request(env)
             response = ctx.response = Response()
             try:
-                r = fn_exec(ctx,None)
+                r = fn_exec(ctx, None)
                 if isinstance(r, Template):
                     tmp = []
                     tmp.append(self._template_engine(r.template_name, r.model))
@@ -272,14 +148,16 @@ class WSGIApplication(object):
                 '''
                 exc_type, exc_value, exc_traceback = sys.exc_info()
                 fp = StringIO()
-                traceback.print_exception(exc_type, exc_value, exc_traceback, file=fp)
+                traceback.print_exception(
+                    exc_type, exc_value, exc_traceback, file=fp)
                 stacks = fp.getvalue()
                 fp.close()
                 start_response('500 Internal Server Error', [])
                 return [
                     r'''<html><body><h1>500 Internal Server Error</h1><div style="font-family:Monaco, Menlo, Consolas, 'Courier New', monospace;"><pre>''',
                     stacks.replace('<', '&lt;').replace('>', '&gt;'),
-                    '</pre></div></body></html>']
+                    '</pre></div></body></html>'
+                ]
             finally:
                 del ctx.application
                 del ctx.request
@@ -287,7 +165,117 @@ class WSGIApplication(object):
 
         return wsgi
 
-if __name__=='__main__':
+    def get(self, path):
+        '''
+        A @get decorator.
+
+        @get('/:id')
+        def index(id):
+            pass
+
+        >>> @get('/test/:id')
+        ... def test():
+        ...     return 'ok'
+        ...
+        >>> test.__web_route__
+        '/test/:id'
+        >>> test.__web_method__
+        'GET'
+        >>> test()
+        'ok'
+        '''
+
+        def _decorator(func):
+            func.__web_route__ = path
+            func.__web_method__ = 'GET'
+            return func
+
+        return _decorator
+
+    def post(self, path):
+        '''
+        A @post decorator.
+
+        >>> @post('/post/:id')
+        ... def testpost():
+        ...     return '200'
+        ...
+        >>> testpost.__web_route__
+        '/post/:id'
+        >>> testpost.__web_method__
+        'POST'
+        >>> testpost()
+        '200'
+        '''
+
+        def _decorator(func):
+            func.__web_route__ = path
+            func.__web_method__ = 'POST'
+            return func
+
+        return _decorator
+
+    def put(self, path):
+        '''
+        A @put decorator.
+        '''
+
+        def _decorator(func):
+            func.__web_route__ = path
+            func.__web_method__ = 'PUT'
+            return func
+
+        return _decorator
+
+    def delete(self, path):
+        '''
+        A @delete decorator.
+        '''
+
+        def _decorator(func):
+            func.__web_route__ = path
+            func.__web_method__ = 'DELETE'
+            return func
+
+        return _decorator
+
+    def view(self, path):
+        '''
+        A view decorator that render a view by dict.
+
+        >>> @view('test/view.html')
+        ... def hello():
+        ...     return dict(name='Bob')
+        >>> t = hello()
+        >>> isinstance(t, Template)
+        True
+        >>> t.template_name
+        'test/view.html'
+        >>> @view('test/view.html')
+        ... def hello2():
+        ...     return ['a list']
+        >>> t = hello2()
+        Traceback (most recent call last):
+        ...
+        ValueError: Expect return a dict when using @view() decorator.
+        '''
+
+        def _decorator(func):
+            @functools.wraps(func)
+            def _wrapper(*args, **kw):
+                r = func(*args, **kw)
+                if isinstance(r, dict):
+                    logging.info('return Template')
+                    return Template(path, **r)
+                raise ValueError(
+                    'Expect return a dict when using @view() decorator.')
+
+            return _wrapper
+
+        return _decorator
+
+
+if __name__ == '__main__':
     sys.path.append('.')
     import doctest
     doctest.testmod()
