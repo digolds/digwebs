@@ -28,16 +28,13 @@ ctx = threading.local()
 
 
 class digwebs(object):
-    def __init__(self, document_root, **kw):
+    def __init__(self, root_path, **kw):
         '''
         Init a digwebs.
 
         Args:
-          document_root: document root path.
+          root_path: root path.
         '''
-        self._running = False
-        self._document_root = document_root
-        self._template_engine = None
 
         def datetime_filter(t):
             delta = int(time.time() - t)
@@ -52,26 +49,13 @@ class digwebs(object):
             dt = datetime.datetime.fromtimestamp(t)
             return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
-        self.template_engine = Jinja2TemplateEngine(
-            os.path.join(document_root, 'views'))
+        self.template_engine = Jinja2TemplateEngine(os.path.join(root_path, 'views'))
         self.template_engine.add_filter('datetime', datetime_filter)
         self.middleware = []
-
-    def _check_not_running(self):
-        if self._running:
-            raise RuntimeError('Cannot modify digwebs when running.')
-
-    @property
-    def template_engine(self):
-        return self._template_engine
-
-    @template_engine.setter
-    def template_engine(self, engine):
-        self._check_not_running()
-        self._template_engine = engine
+        self.root_path = root_path
 
     def init_middlewares(self):
-        for f in os.listdir(self._document_root + r'/middlewares'):
+        for f in os.listdir(self.root_path + r'/middlewares'):
             if f.endswith('.py'):
                 import_module = f.replace(".py", "")
                 m = __import__('middlewares', globals(), locals(),
@@ -90,15 +74,12 @@ class digwebs(object):
     def run(self, port=9999, host='127.0.0.1'):
         from wsgiref.simple_server import make_server
         logging.info('application (%s) will start at %s:%s...' %
-                     (self._document_root, host, port))
+                     (self.root_path, host, port))
         server = make_server(host, port, self.get_wsgi_application())
         server.serve_forever()
 
     def get_wsgi_application(self):
-        self._check_not_running()
-        self._running = True
-
-        _application = Dict(document_root=self._document_root)
+        _application = Dict(document_root=self.root_path)
 
         def fn_route():
             def route_entry(context, next):
@@ -122,7 +103,7 @@ class digwebs(object):
                 r = fn_exec(ctx, None)
                 if isinstance(r, Template):
                     tmp = []
-                    tmp.append(self._template_engine(r.template_name, r.model))
+                    tmp.append(self.template_engine(r.template_name, r.model))
                     r = tmp
                 if isinstance(r, str):
                     tmp = []
