@@ -53,7 +53,7 @@ class digwebs(object):
         self._init_template_engine()
         
         self.middleware = []
-        self.middleware.append(create_controller(root_path,controller_folder,is_develop_mode))
+        self.middleware.append(create_controller(self.root_path,controller_folder,is_develop_mode))
         self._init_middlewares()
     
     def _init_template_engine(self):

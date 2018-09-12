@@ -2,11 +2,9 @@
 
 __author__ = 'SLZ'
 
-import re, logging, mimetypes, os, types
+import re, logging, mimetypes, os, types, importlib
 
 from errors import notfound, badrequest
-
-from web import ctx
 
 def _static_file_generator(fpath):
     BLOCK_SIZE = 8192
@@ -26,12 +24,12 @@ class StaticFileRoute(object):
             return (url[1:], )
         return None
 
-    def __call__(self, *args):
-        fpath = os.path.join(ctx.application.document_root, args[0])
+    def __call__(self, context, *args):
+        fpath = os.path.join(context.application.document_root, args[0])
         if not os.path.isfile(fpath):
             raise notfound()
         fext = os.path.splitext(fpath)[1]
-        ctx.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
+        context.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
         return _static_file_generator(fpath)
 
 class FaviconFileRoute(object):
@@ -45,12 +43,12 @@ class FaviconFileRoute(object):
             return ('favicon.ico', )
         return None
 
-    def __call__(self, *args):
-        fpath = os.path.join(ctx.application.document_root, args[0])
+    def __call__(self, context, *args):
+        fpath = os.path.join(context.application.document_root, args[0])
         if not os.path.isfile(fpath):
             raise notfound()
         fext = os.path.splitext(fpath)[1]
-        ctx.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
+        context.response.content_type = mimetypes.types_map.get(fext.lower(), 'application/octet-stream')
         return _static_file_generator(fpath)
 
 _re_route = re.compile(r'(\:[a-zA-Z_]\w*)')
@@ -109,7 +107,7 @@ class Route(object):
             return m.groups()
         return None
 
-    def __call__(self, *args):
+    def __call__(self, context, *args):
         return self.func(*args)
 
     def __str__(self):
@@ -206,7 +204,7 @@ def create_controller(root_path, controller_folder, is_develop_mode):
     for f in os.listdir(controller_modules_path):
         if f.endswith('.py') and f != '__init__.py':
             import_module = f.replace(".py", "")
-            m = __import__(controller_folder, globals(), locals(), [import_module])
+            m = importlib.import_module(import_module)
             s_m = getattr(m, import_module)
             r.add_module(s_m)
 
@@ -214,5 +212,5 @@ def create_controller(root_path, controller_folder, is_develop_mode):
         request_method = ctx.request.request_method
         path_info = ctx.request.path_info
         f, arg = r.route_to(request_method,path_info)
-        return f(*arg)
+        return f(ctx, *arg)
     return (handle_route,10000)
