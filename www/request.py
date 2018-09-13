@@ -4,7 +4,7 @@ __author__ = 'SLZ'
 
 import cgi, urllib
 
-from common import to_str, unquote, Dict
+from www.common import to_str, unquote, Dict
 
 class MultipartFile(object):
     '''

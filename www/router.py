@@ -4,7 +4,7 @@ __author__ = 'SLZ'
 
 import re, logging, mimetypes, os, types, importlib
 
-from errors import notfound, badrequest
+from www.errors import notfound, badrequest
 
 def _static_file_generator(fpath):
     BLOCK_SIZE = 8192
@@ -144,27 +144,18 @@ class Router(object):
     def __init__(
         self,
         is_develop_mode):
-        self._get_static = {}
-        self._post_static = {}
-
-        self._get_dynamic = []
-        self._post_dynamic = []
+        self.static_method_to_route = {'GET':{},'POST':{},'PUT':{},'DELETE':{}}
+        self.dynamic_method_to_route ={'GET':[],'POST':[],'PUT':[],'DELETE':[]}
         if is_develop_mode:
-            self._get_dynamic.append(StaticFileRoute())
-            self._get_dynamic.append(FaviconFileRoute())
+            self.dynamic_method_to_route['GET'].append(StaticFileRoute())
+            self.dynamic_method_to_route['GET'].append(FaviconFileRoute())
 
     def create_route(self, func):
         route = Route(func)
         if route.is_static:
-            if route.method=='GET':
-                self._get_static[route.path] = route
-            if route.method=='POST':
-                self._post_static[route.path] = route
+            self.static_method_to_route[route.method][route.path] = route
         else:
-            if route.method=='GET':
-                self._get_dynamic.append(route)
-            if route.method=='POST':
-                self._post_dynamic.append(route)
+            self.dynamic_method_to_route[route.method].append(route)
         logging.info('Add route: %s' % str(route))
 
     def add_module(self, mod):
@@ -176,27 +167,14 @@ class Router(object):
                 self.create_route(fn)
 
     def route_to(self, request_method,path_info):
-        if request_method=='GET':
-            fn = self._get_static.get(path_info, None)
-            if fn:
-                return (fn, [])
-            for fn in self._get_dynamic:
-                args = fn.match(path_info)
-                if args:
-                    return (fn, args)
-            raise notfound()
-        
-        if request_method=='POST':
-            fn = self._post_static.get(path_info, None)
-            if fn:
-                return (fn, [])
-            for fn in self._post_dynamic:
-                args = fn.match(path_info)
-                if args:
-                    return (fn, args)
-            raise notfound()
-
-        raise badrequest()
+        fn = self.static_method_to_route[request_method].get(path_info, None)
+        if fn:
+            return (fn, [])
+        for fn in self.dynamic_method_to_route[request_method]:
+            args = fn.match(path_info)
+            if args:
+                return (fn, args)
+        raise notfound()
 
 def create_controller(root_path, controller_folder, is_develop_mode):
     r = Router(is_develop_mode)

@@ -2,7 +2,7 @@
 
 __author__ = 'SLZ'
 
-import re
+from www.response_code import RESPONSE_STATUSES, HEADER_X_POWERED_BY
 
 class HttpError(Exception):
     '''
@@ -17,11 +17,11 @@ class HttpError(Exception):
         Init an HttpError with response code.
         '''
         super(HttpError, self).__init__()
-        self.status = '%d %s' % (code, _RESPONSE_STATUSES[code])
+        self.status = '%d %s' % (code, RESPONSE_STATUSES[code])
 
     def header(self, name, value):
         if not hasattr(self, '_headers'):
-            self._headers = [_HEADER_X_POWERED_BY]
+            self._headers = [HEADER_X_POWERED_BY]
         self._headers.append((name, value))
 
     @property

@@ -4,116 +4,8 @@ __author__ = 'SLZ'
 
 import datetime, re
 
-from common import quote, unquote, to_str
-
-# all known response statues:
-_RESPONSE_STATUSES = {
-    # Informational
-    100: 'Continue',
-    101: 'Switching Protocols',
-    102: 'Processing',
-
-    # Successful
-    200: 'OK',
-    201: 'Created',
-    202: 'Accepted',
-    203: 'Non-Authoritative Information',
-    204: 'No Content',
-    205: 'Reset Content',
-    206: 'Partial Content',
-    207: 'Multi Status',
-    226: 'IM Used',
-
-    # Redirection
-    300: 'Multiple Choices',
-    301: 'Moved Permanently',
-    302: 'Found',
-    303: 'See Other',
-    304: 'Not Modified',
-    305: 'Use Proxy',
-    307: 'Temporary Redirect',
-
-    # Client Error
-    400: 'Bad Request',
-    401: 'Unauthorized',
-    402: 'Payment Required',
-    403: 'Forbidden',
-    404: 'Not Found',
-    405: 'Method Not Allowed',
-    406: 'Not Acceptable',
-    407: 'Proxy Authentication Required',
-    408: 'Request Timeout',
-    409: 'Conflict',
-    410: 'Gone',
-    411: 'Length Required',
-    412: 'Precondition Failed',
-    413: 'Request Entity Too Large',
-    414: 'Request URI Too Long',
-    415: 'Unsupported Media Type',
-    416: 'Requested Range Not Satisfiable',
-    417: 'Expectation Failed',
-    418: "I'm a teapot",
-    422: 'Unprocessable Entity',
-    423: 'Locked',
-    424: 'Failed Dependency',
-    426: 'Upgrade Required',
-
-    # Server Error
-    500: 'Internal Server Error',
-    501: 'Not Implemented',
-    502: 'Bad Gateway',
-    503: 'Service Unavailable',
-    504: 'Gateway Timeout',
-    505: 'HTTP Version Not Supported',
-    507: 'Insufficient Storage',
-    510: 'Not Extended',
-}
-
-_RESPONSE_HEADERS = (
-    'Accept-Ranges',
-    'Age',
-    'Allow',
-    'Cache-Control',
-    'Connection',
-    'Content-Encoding',
-    'Content-Language',
-    'Content-Length',
-    'Content-Location',
-    'Content-MD5',
-    'Content-Disposition',
-    'Content-Range',
-    'Content-Type',
-    'Date',
-    'ETag',
-    'Expires',
-    'Last-Modified',
-    'Link',
-    'Location',
-    'P3P',
-    'Pragma',
-    'Proxy-Authenticate',
-    'Refresh',
-    'Retry-After',
-    'Server',
-    'Set-Cookie',
-    'Strict-Transport-Security',
-    'Trailer',
-    'Transfer-Encoding',
-    'Vary',
-    'Via',
-    'Warning',
-    'WWW-Authenticate',
-    'X-Frame-Options',
-    'X-XSS-Protection',
-    'X-Content-Type-Options',
-    'X-Forwarded-Proto',
-    'X-Powered-By',
-    'X-UA-Compatible',
-)
-
-_RESPONSE_HEADER_DICT = dict(zip(map(lambda x: x.upper(), _RESPONSE_HEADERS), _RESPONSE_HEADERS))
-_HEADER_X_POWERED_BY = ('X-Powered-By', 'digolds/1.0')
-_RE_RESPONSE_STATUS = re.compile(r'^\d\d\d(\ [\w\ ]+)?$')
+from www.common import quote, unquote, to_str
+from www.response_code import RESPONSE_STATUSES, RESPONSE_HEADER_DICT, HEADER_X_POWERED_BY, RE_RESPONSE_STATUS
 
 _TIMEDELTA_ZERO = datetime.timedelta(0)
 
@@ -197,11 +89,11 @@ class Response(object):
         >>> r.headers
         [('Content-Type', 'text/html; charset=utf-8'), ('Set-Cookie', 's1=ok; Max-Age=3600; Path=/; HttpOnly'), ('X-Powered-By', 'transwarp/1.0')]
         '''
-        L = [(_RESPONSE_HEADER_DICT.get(k, k), v) for k, v in self._headers.items()]
+        L = [(RESPONSE_HEADER_DICT.get(k, k), v) for k, v in self._headers.items()]
         if hasattr(self, '_cookies'):
             for v in self._cookies.values():
                 L.append(('Set-Cookie', v))
-        L.append(_HEADER_X_POWERED_BY)
+        L.append(HEADER_X_POWERED_BY)
         return L
 
     def header(self, name):
@@ -216,7 +108,7 @@ class Response(object):
         >>> r.header('X-Powered-By')
         '''
         key = name.upper()
-        if not key in _RESPONSE_HEADER_DICT:
+        if not key in RESPONSE_HEADER_DICT:
             key = name
         return self._headers.get(key)
 
@@ -231,7 +123,7 @@ class Response(object):
         >>> r.header('content-type')
         '''
         key = name.upper()
-        if not key in _RESPONSE_HEADER_DICT:
+        if not key in RESPONSE_HEADER_DICT:
             key = name
         if key in self._headers:
             del self._headers[key]
@@ -248,7 +140,7 @@ class Response(object):
         'image/png'
         '''
         key = name.upper()
-        if not key in _RESPONSE_HEADER_DICT:
+        if not key in RESPONSE_HEADER_DICT:
             key = name
         self._headers[key] = to_str(value)
 
@@ -440,7 +332,7 @@ class Response(object):
         '''
         if isinstance(value, int):
             if value>=100 and value<=999:
-                st = _RESPONSE_STATUSES.get(value, '')
+                st = RESPONSE_STATUSES.get(value, '')
                 if st:
                     self._status = '%d %s' % (value, st)
                 else:
@@ -449,7 +341,7 @@ class Response(object):
                 raise ValueError('Bad response code: %d' % value)
         elif isinstance(value, str):
             value = value.encode('utf-8')
-            if _RE_RESPONSE_STATUS.match(value):
+            if RE_RESPONSE_STATUS.match(value):
                 self._status = value
             else:
                 raise ValueError('Bad response code: %s' % value)
