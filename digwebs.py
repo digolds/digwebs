@@ -3,7 +3,7 @@
 __author__ = 'SLZ'
 
 '''
-digwebs framework entry.
+digwebs framework demo.
 '''
 
 import logging

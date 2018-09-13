@@ -2,6 +2,10 @@
 
 __author__ = 'SLZ'
 
+'''
+digwebs framework controller.
+'''
+
 from www.web import digwebs_app
 
 @digwebs_app.get('/')
