@@ -29,13 +29,12 @@ from apis import APIError
 # thread local object for storing request and response:
 ctx = threading.local()
 
-
 class digwebs(object):
     def __init__(
         self,
         root_path = None,
-        views_folder = 'views',
-        middlewares_folder='middlewares',
+        template_folder = None,
+        middlewares_folder= None,
         controller_folder = '',
         is_develop_mode = True):
         '''
@@ -46,17 +45,21 @@ class digwebs(object):
         '''
 
         self.root_path = root_path if root_path else os.path.abspath(os.path.dirname(sys.argv[0]))
-        self.views_folder = views_folder
-        self.middlewares_folder = middlewares_folder
-        self.is_develop_mode = is_develop_mode
-        
-        self._init_template_engine()
-        
         self.middleware = []
-        self.middleware.append(create_controller(self.root_path,controller_folder,is_develop_mode))
-        self._init_middlewares()
+        self.template_folder = template_folder
+        self.middlewares_folder = middlewares_folder
+        self.controller_folder = controller_folder
+        self.is_develop_mode = is_develop_mode
     
-    def _init_template_engine(self):
+    def init_all(self):
+        if self.template_folder:
+            self._init_template_engine(os.path.join(self.root_path, self.template_folder))
+        
+        self.middleware.append(create_controller(self.root_path,self.controller_folder,self.is_develop_mode))
+        if self.middlewares_folder:
+            self._init_middlewares(os.path.join(self.root_path, self.middlewares_folder))
+
+    def _init_template_engine(self,template_path):
         def datetime_filter(t):
             delta = int(time.time() - t)
             if delta < 60:
@@ -70,11 +73,11 @@ class digwebs(object):
             dt = datetime.datetime.fromtimestamp(t)
             return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
-        self.template_engine = Jinja2TemplateEngine(os.path.join(self.root_path, self.views_folder))
+        self.template_engine = Jinja2TemplateEngine(template_path)
         self.template_engine.add_filter('datetime', datetime_filter)
 
-    def _init_middlewares(self):
-        for f in os.listdir(os.path.join(self.root_path, self.middlewares_folder)):
+    def _init_middlewares(self,middlewares_path):
+        for f in os.listdir(middlewares_path):
             if f.endswith('.py'):
                 import_module = f.replace(".py", "")
                 m = __import__(self.middlewares_folder, globals(), locals(),
@@ -296,6 +299,8 @@ class digwebs(object):
             return r
         return _wrapper
 
+digwebs_app = digwebs()
+digwebs_app.init_all()
 
 if __name__ == '__main__':
     sys.path.append('.')
