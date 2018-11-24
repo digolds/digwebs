@@ -4,7 +4,7 @@ __author__ = 'SLZ'
 
 import re, logging, mimetypes, os, types, importlib
 
-from errors import notfound, badrequest
+from .errors import notfound, badrequest
 
 def _static_file_generator(fpath):
     BLOCK_SIZE = 8192
