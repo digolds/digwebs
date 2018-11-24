@@ -299,6 +299,13 @@ class digwebs(object):
             return r
         return _wrapper
 
+current_app = None
+def get_app(root_path):
+    global current_app
+    if current_app is None:
+        current_app = digwebs(root_path)
+    return current_app
+
 if __name__ == '__main__':
     sys.path.append('.')
     import doctest

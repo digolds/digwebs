@@ -179,10 +179,11 @@ class Router(object):
 def create_controller(root_path, controller_folder, is_develop_mode):
     r = Router(is_develop_mode)
     controller_modules_path = os.path.join(root_path, controller_folder)
+    importlib.import_module(controller_folder)
     for f in os.listdir(controller_modules_path):
-        if f.endswith('controller.py') and f != '__init__.py':
-            import_module = f.replace(".py", "")
-            m = importlib.import_module(import_module)
+        if f.endswith('.py') and f != '__init__.py':
+            import_module = "."+f.replace(".py", "")
+            m = importlib.import_module(import_module,package=controller_folder)
             #s_m = getattr(m, import_module)
             r.add_module(m)
 
