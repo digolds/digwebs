@@ -18,13 +18,13 @@ import functools
 import json
 from io import StringIO
 # import custom modules
-from www.common import Dict
-from www.errors import notfound, HttpError, RedirectError
-from www.request import Request
-from www.response import Response
-from www.template import Template, Jinja2TemplateEngine
-from www.router import create_controller
-from www.apis import APIError
+from common import Dict
+from errors import notfound, HttpError, RedirectError
+from request import Request
+from response import Response
+from template import Template, Jinja2TemplateEngine
+from router import create_controller
+from apis import APIError
 
 # thread local object for storing request and response:
 ctx = threading.local()

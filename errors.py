@@ -2,7 +2,7 @@
 
 __author__ = 'SLZ'
 
-from www.response_code import RESPONSE_STATUSES, HEADER_X_POWERED_BY
+from response_code import RESPONSE_STATUSES, HEADER_X_POWERED_BY
 
 class HttpError(Exception):
     '''

@@ -4,8 +4,8 @@ __author__ = 'SLZ'
 
 import datetime, re
 
-from www.common import quote, unquote, to_str
-from www.response_code import RESPONSE_STATUSES, RESPONSE_HEADER_DICT, HEADER_X_POWERED_BY, RE_RESPONSE_STATUS
+from common import quote, unquote, to_str
+from response_code import RESPONSE_STATUSES, RESPONSE_HEADER_DICT, HEADER_X_POWERED_BY, RE_RESPONSE_STATUS
 
 _TIMEDELTA_ZERO = datetime.timedelta(0)
 
