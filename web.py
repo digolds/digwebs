@@ -33,9 +33,9 @@ class digwebs(object):
     def __init__(
         self,
         root_path = None,
-        template_folder = None,
-        middlewares_folder= None,
-        controller_folder = '',
+        template_folder = 'views',
+        middlewares_folder= 'middlewares',
+        controller_folder = 'viewmodels',
         is_develop_mode = True):
         '''
         Init a digwebs.
@@ -298,9 +298,6 @@ class digwebs(object):
             ctx.response.content_type = 'application/json'
             return r
         return _wrapper
-
-digwebs_app = digwebs()
-digwebs_app.init_all()
 
 if __name__ == '__main__':
     sys.path.append('.')
