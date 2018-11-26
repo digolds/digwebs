@@ -50,6 +50,7 @@ class digwebs(object):
         self.middlewares_folder = middlewares_folder
         self.controller_folder = controller_folder
         self.is_develop_mode = is_develop_mode
+        self.template_callbacks = set()
     
     def init_all(self):
         if self.template_folder:
@@ -125,6 +126,8 @@ class digwebs(object):
                 r = fn_exec(ctx, None)
                 if isinstance(r, Template):
                     tmp = []
+                    for cbf in self.template_callbacks:
+                        r.model.update(cbf())
                     tmp.append(self.template_engine(r.template_name, r.model))
                     r = tmp
                 if isinstance(r, str):
@@ -167,6 +170,12 @@ class digwebs(object):
                 del ctx.response
 
         return wsgi
+
+    def register_template_callback(self,cb):
+        self.template_callbacks.add(cb)
+    
+    def unregister_template_callback(self,cb):
+        self.template_callbacks.remove(cb)
 
     def get(self, path):
         '''
