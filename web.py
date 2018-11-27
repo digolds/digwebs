@@ -35,7 +35,7 @@ class digwebs(object):
         root_path = None,
         template_folder = 'views',
         middlewares_folder= 'middlewares',
-        controller_folder = 'viewmodels',
+        controller_folder = 'controllers',
         is_develop_mode = True):
         '''
         Init a digwebs.
