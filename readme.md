@@ -30,4 +30,6 @@ This step will generate project layout like below:
 * views is where you put the html file
 
 5. run `python .\digwebs.py` to lanch the web app demo
-6. open your browser and enter `localhost:9999` to checkout the result
+6. open your browser and enter `localhost:9999`,you see the content `"digwebs - A Minimal Web Framework!"`
+
+**Note**: if you want to be a master of `digwebs`, head over [here](https://www.digolds.cn/detail/0015370868460626a029ac2cf3c42359d4e9fffeae137c7000) to learn the design philosophy of `digwebs`
