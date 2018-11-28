@@ -309,10 +309,10 @@ class digwebs(object):
         return _wrapper
 
 current_app = None
-def get_app(root_path):
+def get_app(config_ins):
     global current_app
     if current_app is None:
-        current_app = digwebs(root_path)
+        current_app = digwebs(**config_ins)
     return current_app
 
 if __name__ == '__main__':
