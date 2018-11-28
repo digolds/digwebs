@@ -128,6 +128,7 @@ class digwebs(object):
                     tmp = []
                     for cbf in self.template_callbacks:
                         r.model.update(cbf())
+                    r.model['ctx'] = ctx
                     tmp.append(self.template_engine(r.template_name, r.model))
                     r = tmp
                 if isinstance(r, str):
