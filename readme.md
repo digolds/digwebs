@@ -24,12 +24,12 @@ This step will generate project layout like below:
   |-views
 ```
 
-* digwebs is where this web framework locate
-* controllers is where you put controller script
-* middlewares is where you put middlewares script
-* static is where you put front end script such as css file, javascript file, font, image etc
-* test is where you put the test script for your web app
-* views is where you put the html file
+* **digwebs** is where this web framework locate
+* **controllers** is where you put controller script
+* **middlewares** is where you put middlewares script
+* **static** is where you put front end script such as css file, javascript file, font, image etc
+* **test** is where you put the test script for your web app
+* **views** is where you put the html file
 
 5. run `python .\digwebs.py` to launch the web app demo
 6. open your browser and enter `localhost:9999`,you see the content `"digwebs - A Minimal Web Framework!"`
