@@ -8,6 +8,7 @@ As a developer, you can also use `git` to `pull` this repository to your compute
 2. Use `git` to pull the source
 3. Run `pip install jinja2` to install jinja2 to your computer
 4. Run `python .\digwebs\project_generator.py` to generate the project file structure
+
 This step will generate project layout like below:
 ```
 .
@@ -22,6 +23,7 @@ This step will generate project layout like below:
   |-test
   |-views
 ```
+
 * digwebs is where this web framework locate
 * controllers is where you put controller script
 * middlewares is where you put middlewares script
@@ -29,7 +31,11 @@ This step will generate project layout like below:
 * test is where you put the test script for your web app
 * views is where you put the html file
 
-5. run `python .\digwebs.py` to lanch the web app demo
+5. run `python .\digwebs.py` to launch the web app demo
 6. open your browser and enter `localhost:9999`,you see the content `"digwebs - A Minimal Web Framework!"`
 
 **Note**: if you want to be a master of `digwebs`, head over [here](https://www.digolds.cn/detail/0015370868460626a029ac2cf3c42359d4e9fffeae137c7000) to learn the design philosophy of `digwebs`
+
+# License
+
+This project is licensed under the MIT open source license.
