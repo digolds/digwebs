@@ -53,7 +53,10 @@ class Jinja2TemplateEngine(TemplateEngine):
 
     def add_filter(self, name, fn_filter):
         self._env.filters[name] = fn_filter
-
+    
+    def add_globals(self,key,value):
+        self._env.globals[key] = value
+    
     def __call__(self, path, model):
         return self._env.get_template(path).render(**model).encode('utf-8')
 
