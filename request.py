@@ -5,6 +5,8 @@ __author__ = 'SLZ'
 import cgi, urllib
 
 from .common import to_str, unquote, Dict
+from .body_parser import get_parser
+import urllib.parse
 
 class MultipartFile(object):
     '''
@@ -18,6 +20,34 @@ class MultipartFile(object):
         self.filename = to_str(storage.filename)
         self.file = storage.file
         self.data = storage.file.read()
+
+import tempfile
+from email.parser import FeedParser
+class CustomFieldStorage(cgi.FieldStorage):
+    def __init__(self, *args, **kwargs):
+        cgi.FieldStorage.__init__(self, *args, **kwargs)
+
+    def make_file(self):
+        if self._binary_file or self.length >= 0:
+            return tempfile.TemporaryFile("wb+")
+        else:
+            return tempfile.TemporaryFile("w+",
+                encoding=self.encoding, newline = '\n')
+    
+    def __getattr__(self, name):
+        if name != 'value':
+            raise AttributeError(name)
+        if self.file:
+            self.file.seek(0)
+            value = self.file.read()
+            self.file.seek(0)
+        elif self.list is not None:
+            value = self.list
+        else:
+            value = None
+        return value
+
+import json
 
 class Request(object):
     '''
@@ -34,10 +64,14 @@ class Request(object):
             if item.filename:
                 return MultipartFile(item)
             return to_str(item.value)
-        fs = cgi.FieldStorage(fp=self._environ['wsgi.input'], environ=self._environ, keep_blank_values=True)
-        inputs = dict()
-        for key in fs:
-            inputs[key] = _convert(fs[key])
+        fs = CustomFieldStorage(fp=self._environ['wsgi.input'], environ=self._environ, keep_blank_values=True)
+        received_data = fs.value
+        if isinstance(received_data,list):
+            inputs = dict()
+            for key in fs:
+                inputs[key] = _convert(fs[key])
+        else:
+            raise ValueError('unknown received data type')
         return inputs
 
     def _get_raw_input(self):
@@ -149,16 +183,8 @@ class Request(object):
         return copy
 
     def get_body(self):
-        '''
-        Get raw data from HTTP POST and return as str.
-
-        >>> from StringIO import StringIO
-        >>> r = Request({'REQUEST_METHOD':'POST', 'wsgi.input':StringIO('<xml><raw/>')})
-        >>> r.get_body()
-        '<xml><raw/>'
-        '''
         fp = self._environ['wsgi.input']
-        return fp.read()
+        return get_parser(self._environ['CONTENT_TYPE'])(fp.read())
 
     @property
     def remote_addr(self):
@@ -182,18 +208,22 @@ class Request(object):
         '''
         return self._environ.get('DOCUMENT_ROOT', '')
 
-    @property
-    def query_string(self):
+    def get_query_string(self,to_json=False):
         '''
         Get raw query string as str. Return '' if no query string.
 
         >>> r = Request({'QUERY_STRING': 'a=1&c=2'})
-        >>> r.query_string
+        >>> r.get_query_string()
         'a=1&c=2'
         >>> r = Request({})
-        >>> r.query_string
+        >>> r.get_query_string()
         ''
+        >>> r = Request({'QUERY_STRING': 'a=1&b=2&b=3'})
+        >>> r.get_query_string(to_json=True)
+        {'a': ['1'], 'b': ['2','3']}
         '''
+        if to_json:
+            return urllib.parse.parse_qs(self._environ.get('QUERY_STRING', '')) 
         return self._environ.get('QUERY_STRING', '')
 
     @property
@@ -254,7 +284,7 @@ class Request(object):
             for k, v in self._environ.items():
                 if k.startswith('HTTP_'):
                     # convert 'HTTP_ACCEPT_ENCODING' to 'ACCEPT-ENCODING'
-                    hdrs[k[5:].replace('_', '-').upper()] = v.decode('utf-8')
+                    hdrs[k[5:].replace('_', '-').upper()] = v
             self._headers = hdrs
         return self._headers
 
