@@ -177,6 +177,14 @@ class digwebs(object):
     
     def unregister_template_callback(self,cb):
         self.template_callbacks.remove(cb)
+    
+    @property
+    def static_resource_url(self):
+        return self.template_engine.get_globals('static_file_prefix')
+
+    @static_resource_url.setter
+    def static_resource_url(self, value):
+        self.template_engine.set_globals('static_file_prefix',value)
 
     def get(self, path):
         '''
