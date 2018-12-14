@@ -1,6 +1,6 @@
 # Digolds web framework
 
-A tiny web framework called **digwebs** which is developed by Python. You can't use `pip` to install this web framework from PyPI right now, because digwebs is under development and is used to empower the web app called [digolds](https://www.digolds.cn). When more features are added to this framework, we will provide stable package to PyPI where you can use `pip` to install it to your computer.
+A tiny web framework called **digwebs** which is developed by Python. You can checkout the detail design of **digwebs** in [here](https://www.digolds.cn/detail/0015370868460626a029ac2cf3c42359d4e9fffeae137c7000). You can't use `pip` to install this web framework from PyPI right now, because digwebs is under development and is used to empower the web app called [digolds](https://www.digolds.cn). When more features are added to this framework, we will provide stable package to PyPI where you can use `pip` to install it to your computer.
 
 As a developer, you can also use `git` to `pull` this repository to your computer, then follow below steps to quickly boost this framework.
 
@@ -35,6 +35,10 @@ This step will generate project layout like below:
 6. open your browser and enter `localhost:9999`,you see the content `"digwebs - A Minimal Web Framework!"`
 
 **Note**: if you want to be a master of `digwebs`, head over [here](https://www.digolds.cn/detail/0015370868460626a029ac2cf3c42359d4e9fffeae137c7000) to learn the design philosophy of `digwebs`
+
+# Contribution
+
+We are looking for contributors. Please check open issues in the above repos if you think you could help, or open a new one if you have an idea you'd like to discuss.
 
 # License
 
