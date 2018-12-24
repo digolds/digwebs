@@ -295,6 +295,18 @@ class digwebs(object):
 
         return _decorator
     
+    def dynamic_view(self, pathfn):
+        def _decorator(func):
+            @functools.wraps(func)
+            def _wrapper(*args, **kw):
+                r = func(*args, **kw)
+                if isinstance(r, dict):
+                    logging.info('return Template')
+                    return Template(pathfn(), **r)
+                raise ValueError('Expect return a dict when using @view() decorator.')
+            return _wrapper
+        return _decorator
+
     def api(self,func):
         '''
         A decorator that makes a function to json api, makes the return value as json.
