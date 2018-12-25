@@ -149,6 +149,8 @@ class Router(object):
         if is_develop_mode:
             self.dynamic_method_to_route['GET'].append(StaticFileRoute())
             self.dynamic_method_to_route['GET'].append(FaviconFileRoute())
+        
+        self.func_to_route = {}
 
     def create_route(self, func):
         route = Route(func)
@@ -157,6 +159,7 @@ class Router(object):
         else:
             self.dynamic_method_to_route[route.method].append(route)
         logging.info('Add route: %s' % str(route))
+        return route
 
     def add_module(self, mod):
         m = mod if type(mod)==types.ModuleType else _load_module(mod)
@@ -164,7 +167,7 @@ class Router(object):
         for name in dir(m):
             fn = getattr(m, name)
             if callable(fn) and hasattr(fn, '__web_route__') and hasattr(fn, '__web_method__'):
-                self.create_route(fn)
+                self.func_to_route[name] = self.create_route(fn)
 
     def route_to(self, request_method,path_info):
         fn = self.static_method_to_route[request_method].get(path_info, None)
@@ -176,20 +179,25 @@ class Router(object):
                 return (fn, args)
         raise notfound()
 
-def create_controller(root_path, controller_folder, is_develop_mode):
-    r = Router(is_develop_mode)
-    controller_modules_path = os.path.join(root_path, controller_folder)
-    importlib.import_module(controller_folder)
-    for f in os.listdir(controller_modules_path):
-        if f.endswith('.py') and f != '__init__.py':
-            import_module = "."+f.replace(".py", "")
-            m = importlib.import_module(import_module,package=controller_folder)
-            #s_m = getattr(m, import_module)
-            r.add_module(m)
+    def create_controller(self,root_path, controller_folder):
+        controller_modules_path = os.path.join(root_path, controller_folder)
+        importlib.import_module(controller_folder)
+        for f in os.listdir(controller_modules_path):
+            if f.endswith('.py') and f != '__init__.py':
+                import_module = "."+f.replace(".py", "")
+                m = importlib.import_module(import_module,package=controller_folder)
+                #s_m = getattr(m, import_module)
+                self.add_module(m)
 
-    def handle_route(ctx, next):
-        request_method = ctx.request.request_method
-        path_info = ctx.request.path_info
-        f, arg = r.route_to(request_method,path_info)
-        return f(ctx, *arg)
-    return (handle_route,10000)
+        def handle_route(ctx, next):
+            request_method = ctx.request.request_method
+            path_info = ctx.request.path_info
+            f, arg = self.route_to(request_method,path_info)
+            return f(ctx, *arg)
+        return (handle_route,10000)
+    
+    def url_for(self,func_name):
+        r = self.func_to_route.get(func_name,None)
+        if r:
+            return r.path
+        raise notfound()

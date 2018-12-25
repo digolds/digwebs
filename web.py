@@ -23,7 +23,7 @@ from .errors import notfound, HttpError, RedirectError
 from .request import Request
 from .response import Response
 from .template import Template, Jinja2TemplateEngine
-from .router import create_controller
+from .router import Router
 from .apis import APIError
 
 # thread local object for storing request and response:
@@ -51,12 +51,14 @@ class digwebs(object):
         self.controller_folder = controller_folder
         self.is_develop_mode = is_develop_mode
         self.template_callbacks = set()
+        self.router = None
     
     def init_all(self):
         if self.template_folder:
             self._init_template_engine(os.path.join(self.root_path, self.template_folder))
         
-        self.middleware.append(create_controller(self.root_path,self.controller_folder,self.is_develop_mode))
+        self.router = Router(self.is_develop_mode)
+        self.middleware.append(self.router.create_controller(self.root_path,self.controller_folder,))
         if self.middlewares_folder:
             self._init_middlewares(os.path.join(self.root_path, self.middlewares_folder))
 
