@@ -245,7 +245,7 @@ class Request(object):
     @property
     def url(self):
         env = self._environ
-        return env.get('wsgi.url_scheme')+'://'+self.host+self.path_info+'?'+self.get_query_string()
+        return env.get('wsgi.url_scheme')+'s://'+self.host+self.path_info+'?'+self.get_query_string()
 
     @property
     def request_method(self):
