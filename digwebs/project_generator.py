@@ -101,4 +101,5 @@ def hello_world():
 make_file(os.path.join(contorller_dir,'main_controller.py'),main_controller_content)
 
 import shutil
-shutil.copyfile(os.path.join(dir_path,'favicon.ico'), os.path.join(parent_dir,'favicon.ico'))
+def gen():
+  shutil.copyfile(os.path.join(dir_path,'favicon.ico'), os.path.join(parent_dir,'favicon.ico'))
