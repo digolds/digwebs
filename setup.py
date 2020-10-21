@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="digwebs-slz", # Replace with your own username
+    name="digwebs", # Replace with your own username
     version="0.0.6",
     author="SLZ",
     author_email="founders@digolds.cn",
