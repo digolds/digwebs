@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="digwebs-slz", # Replace with your own username
-    version="0.0.5",
+    version="0.0.6",
     author="SLZ",
     author_email="founders@digolds.cn",
     description="A tiny web framework-digwebs ",
@@ -24,4 +24,5 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
+    include_package_data=True
 )
