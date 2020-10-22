@@ -3,9 +3,9 @@
 __author__ = 'SLZ'
 
 import os
+import shutil
+import sys
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-parent_dir = os.path.abspath(os.path.join(dir_path, '..'))
 
 def make_dir(directory):
     if not os.path.exists(directory):
@@ -14,19 +14,6 @@ def make_dir(directory):
 def make_file(file_path, content):
     with open(file_path, 'w') as f:
         f.write(content)
-
-contorller_dir = os.path.join(parent_dir,'controllers')
-make_dir(contorller_dir)
-make_dir(os.path.join(parent_dir,'middlewares'))
-make_dir(os.path.join(parent_dir,'views'))
-make_dir(os.path.join(parent_dir,'test'))
-
-make_dir(os.path.join(parent_dir,'static'))
-static_dir = os.path.join(parent_dir,'static')
-make_dir(os.path.join(static_dir,'css'))
-make_dir(os.path.join(static_dir,'js'))
-make_dir(os.path.join(static_dir,'images'))
-make_dir(os.path.join(static_dir,'fonts'))
 
 boost_content = \
 """#!/usr/bin/env python
@@ -50,8 +37,6 @@ if __name__ == '__main__':
 else:
     wsgi_app = digwebs_app.get_wsgi_application()
 """
-
-make_file(os.path.join(parent_dir,'digwebs.py'),boost_content)
 
 html_content = \
 """<html>
@@ -98,7 +83,26 @@ from digwebs.web import current_app
 def hello_world():
     return %s
 """ % '"""'+ html_content + '"""'
-make_file(os.path.join(contorller_dir,'main_controller.py'),main_controller_content)
 
-import shutil
-shutil.copyfile(os.path.join(dir_path,'favicon.ico'), os.path.join(parent_dir,'favicon.ico'))
+def gen():
+  argc = len(sys.argv)
+  if argc < 2:
+    print('Usage: digwebs <your-web-service-directory>')
+    return
+  web_service_name = sys.argv[1]
+  dir_path = os.getcwd()
+  web_service_dir = os.path.abspath(os.path.join(dir_path, web_service_name))
+  contorller_dir = os.path.join(web_service_dir,'controllers')
+  make_dir(contorller_dir)
+  make_dir(os.path.join(web_service_dir,'middlewares'))
+  make_dir(os.path.join(web_service_dir,'views'))
+  make_dir(os.path.join(web_service_dir,'test'))
+  make_dir(os.path.join(web_service_dir,'static'))
+  static_dir = os.path.join(web_service_dir,'static')
+  make_dir(os.path.join(static_dir,'css'))
+  make_dir(os.path.join(static_dir,'js'))
+  make_dir(os.path.join(static_dir,'images'))
+  make_dir(os.path.join(static_dir,'fonts'))
+  make_file(os.path.join(web_service_dir,'wsgiapp.py'),boost_content)
+  make_file(os.path.join(contorller_dir,'main_controller.py'),main_controller_content)
+  shutil.copyfile(os.path.join(os.path.dirname(os.path.realpath(__file__)),'favicon.ico'), os.path.join(web_service_dir,'favicon.ico'))
