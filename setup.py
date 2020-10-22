@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="digwebs", # Replace with your own username
-    version="0.0.6",
+    version="0.0.1",
     author="SLZ",
     author_email="founders@digolds.cn",
     description="A tiny web framework-digwebs ",
